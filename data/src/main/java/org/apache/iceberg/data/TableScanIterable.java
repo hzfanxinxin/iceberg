@@ -19,9 +19,6 @@
 
 package org.apache.iceberg.data;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collections;
@@ -44,9 +41,13 @@ import org.apache.iceberg.expressions.Evaluator;
 import org.apache.iceberg.expressions.Expressions;
 import org.apache.iceberg.io.CloseableGroup;
 import org.apache.iceberg.io.CloseableIterable;
+import org.apache.iceberg.io.CloseableIterator;
 import org.apache.iceberg.io.InputFile;
 import org.apache.iceberg.orc.ORC;
 import org.apache.iceberg.parquet.Parquet;
+import org.apache.iceberg.relocated.com.google.common.base.Preconditions;
+import org.apache.iceberg.relocated.com.google.common.collect.Iterables;
+import org.apache.iceberg.relocated.com.google.common.collect.Lists;
 import org.apache.iceberg.types.Type;
 import org.apache.iceberg.types.Types;
 import org.apache.iceberg.util.PartitionUtil;
@@ -71,7 +72,7 @@ class TableScanIterable extends CloseableGroup implements CloseableIterable<Reco
   }
 
   @Override
-  public Iterator<Record> iterator() {
+  public CloseableIterator<Record> iterator() {
     ScanIterator iter = new ScanIterator(tasks, caseSensitive);
     addCloseable(iter);
     return iter;
@@ -112,7 +113,8 @@ class TableScanIterable extends CloseableGroup implements CloseableIterable<Reco
         ORC.ReadBuilder orc = ORC.read(input)
                 .project(projection)
                 .createReaderFunc(fileSchema -> GenericOrcReader.buildReader(projection, fileSchema))
-                .split(task.start(), task.length());
+                .split(task.start(), task.length())
+                .filter(task.residual());
 
         return orc.build();
 
@@ -128,7 +130,7 @@ class TableScanIterable extends CloseableGroup implements CloseableIterable<Reco
     super.close(); // close data files
   }
 
-  private class ScanIterator implements Iterator<Record>, Closeable {
+  private class ScanIterator implements CloseableIterator<Record> {
     private final Iterator<FileScanTask> tasks;
     private final boolean caseSensitive;
     private Closeable currentCloseable = null;
