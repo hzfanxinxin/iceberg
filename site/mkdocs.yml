@@ -48,16 +48,19 @@ nav:
     - How to Release: how-to-release.md
   - User docs:
     - Getting Started: getting-started.md
+    - Flink: flink.md
+    - Spark: spark.md
+    - Spark Streaming: spark-structured-streaming.md
+    - Presto: presto.md
+    - Hive: hive.md
+    - Maintenance: maintenance.md
     - Configuration: configuration.md
     - Schemas: schemas.md
     - Partitioning: partitioning.md
+    - Table evolution: evolution.md
     - Performance: performance.md
     - Reliability: reliability.md
-    - Table evolution: evolution.md
     - Time Travel: spark#time-travel
-    - Spark Quickstart: api-quickstart.md
-    - Spark: spark.md
-    - Presto: presto.md
   - Java:
     - Git Repo: https://github.com/apache/iceberg
     - Quickstart: java-api-quickstart.md

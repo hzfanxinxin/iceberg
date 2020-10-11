@@ -26,6 +26,7 @@ import org.apache.iceberg.io.CloseableIterable;
 import org.apache.iceberg.io.FileIO;
 import org.apache.iceberg.relocated.com.google.common.collect.ImmutableList;
 import org.apache.iceberg.relocated.com.google.common.collect.Sets;
+import org.apache.iceberg.types.Type;
 import org.apache.iceberg.types.TypeUtil;
 
 /**
@@ -37,10 +38,16 @@ import org.apache.iceberg.types.TypeUtil;
 public class ManifestEntriesTable extends BaseMetadataTable {
   private final TableOperations ops;
   private final Table table;
+  private final String name;
 
-  public ManifestEntriesTable(TableOperations ops, Table table) {
+  ManifestEntriesTable(TableOperations ops, Table table) {
+    this(ops, table, table.name() + ".entries");
+  }
+
+  ManifestEntriesTable(TableOperations ops, Table table, String name) {
     this.ops = ops;
     this.table = table;
+    this.name = name;
   }
 
   @Override
@@ -49,8 +56,8 @@ public class ManifestEntriesTable extends BaseMetadataTable {
   }
 
   @Override
-  String metadataTableName() {
-    return "entries";
+  public String name() {
+    return name;
   }
 
   @Override
@@ -97,7 +104,8 @@ public class ManifestEntriesTable extends BaseMetadataTable {
         boolean ignoreResiduals, boolean caseSensitive, boolean colStats) {
       // return entries from both data and delete manifests
       CloseableIterable<ManifestFile> manifests = CloseableIterable.withNoopClose(snapshot.allManifests());
-      Schema fileSchema = new Schema(schema().findType("data_file").asStructType().fields());
+      Type fileProjection = schema().findType("data_file");
+      Schema fileSchema = fileProjection != null ? new Schema(fileProjection.asStructType().fields()) : new Schema();
       String schemaString = SchemaParser.toJson(schema());
       String specString = PartitionSpecParser.toJson(PartitionSpec.unpartitioned());
       Expression filter = ignoreResiduals ? Expressions.alwaysTrue() : rowFilter;
@@ -115,7 +123,7 @@ public class ManifestEntriesTable extends BaseMetadataTable {
 
     ManifestReadTask(FileIO io, ManifestFile manifest, Schema fileSchema, String schemaString,
                      String specString, ResidualEvaluator residuals) {
-      super(DataFiles.fromManifest(manifest), schemaString, specString, residuals);
+      super(DataFiles.fromManifest(manifest), null, schemaString, specString, residuals);
       this.fileSchema = fileSchema;
       this.io = io;
       this.manifest = manifest;
